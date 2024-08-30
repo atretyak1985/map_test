@@ -1,14 +1,8 @@
 import {useEffect, useState} from "react";
-import {client} from "map/sanity/client";
 import {Search} from "map/assets/icons";
 import Image from "next/image";
 import {Category} from "map/app/types";
-
-const CATEGORY_QUERY = `*[_type == "category"]  | order(title asc) {
-    _id,
-    title,
-    "icon": icon.asset->url
-}`;
+import {CategoryService} from "map/app/services/sanity/categoryService";
 
 interface FilterProps {
     handleFilter: (categoryId: string) => void;
@@ -16,15 +10,23 @@ interface FilterProps {
 
 const Filter = ({handleFilter}: FilterProps) => {
     const [categories, setCategories] = useState<Category[]>([]);
+    const categoryService = new CategoryService();
 
     useEffect(() => {
-        client.fetch(CATEGORY_QUERY).then((data) => {
-            if (data.length > 0) {
-                data[0].selected = true;
-                handleCategoryClick(data[0]._id)
+        const fetchCategories = async () => {
+            try {
+                const data = await categoryService.getCategories();
+                if (data.length > 0) {
+                    data[0].selected = true;
+                    handleCategoryClick(data[0]._id);
+                }
+                setCategories(data);
+            } catch (error) {
+                console.error("Failed to load categories:", error);
             }
-            setCategories(data);
-        });
+        };
+
+        fetchCategories();
     }, []);
 
     const handleCategoryClick = (categoryId: string) => {
@@ -68,6 +70,6 @@ const Filter = ({handleFilter}: FilterProps) => {
             </div>
         </section>
     );
-}
+};
 
 export default Filter;
